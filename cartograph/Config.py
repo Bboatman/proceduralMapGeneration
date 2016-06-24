@@ -35,6 +35,8 @@ class Config:
         self.FILE_NAME_REGION_CLUSTERS = "./data/tsv/region_clusters.tsv"
         self.FILE_NAME_REGION_BORDERS = "./data/tsv/region_borders.tsv"
         self.FILE_NAME_TOP_TITLES = "./data/geojson/top_100_articles.geojson"
+        self.FILE_NAME_LINK_TITLES = "./data/labdata/simple_links.txt"
+        self.FILE_NAME_LINKS = "./data/tsv/links.txt"
 
 
 __config = Config()

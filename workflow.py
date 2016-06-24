@@ -305,3 +305,34 @@ class CreateMap(MTimeMixin, luigi.Task):
         ms.saveMapXml(config.FILE_NAME_COUNTRIES, config.FILE_NAME_MAP)
         ms.saveImage(config.FILE_NAME_MAP, config.FILE_NAME_IMGNAME + ".png")
         ms.saveImage(config.FILE_NAME_MAP, config.FILE_NAME_IMGNAME + ".svg")
+
+class WikibrainLinkTitles(luigi.ExternalTask):
+    def output(self):
+        return (luigi.LocalTarget(config.FILE_NAME_LINK_TITLES))
+
+
+class CreateLinks(MTimeMixin, luigi.Task):
+    def output(self):
+        return (luigi.LocalTarget(config.FILE_NAME_LINKS))
+
+    def requires(self):
+        return WikibrainLinkTitles(), WikiBrainNumbering()
+
+    def run(self):
+        titleFeatures = Util.read_features(config.FILE_NAME_NUMBERED_NAMES)
+        titleToId = dict((val['name'], key) for (key, val) in titleFeatures.items() )
+        ids = []
+        links = []
+        with open(config.FILE_NAME_LINK_TITLES, 'r') as f:
+            for line in f:
+                tokens = line.strip().split('\t')
+                fromId = titleToId.get(tokens[0])
+                toIds = (titleToId.get(t) for t in tokens[1:] if t in titleToId)
+                if fromId and toIds:
+                    ids.append(fromId)
+                    links.append(' '.join(sorted(toIds)))
+        Util.write_tsv(config.FILE_NAME_LINKS, ("id", "links"), ids, links)
+
+
+
+
