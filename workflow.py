@@ -1,6 +1,12 @@
-import luigi
 import os
-import time
+import tempfile
+
+from sklearn.cluster import KMeans
+import numpy as np
+import luigi
+from tsne import bh_sne
+from plumbum import local
+
 from cartograph import Config
 from cartograph import Util
 from cartograph import Contours
@@ -8,9 +14,6 @@ from cartograph import Denoiser
 from cartograph import MapStyler
 from cartograph.BorderFactory import BorderFactory
 from cartograph.BorderGeoJSONWriter import BorderGeoJSONWriter
-from tsne import bh_sne
-import numpy as np
-from sklearn.cluster import KMeans
 
 
 config = Config.BAD_GET_CONFIG()
@@ -332,6 +335,50 @@ class CreateLinks(MTimeMixin, luigi.Task):
                     ids.append(fromId)
                     links.append(' '.join(sorted(toIds)))
         Util.write_tsv(config.FILE_NAME_LINKS, ("id", "links"), ids, links)
+
+class CreateEdges(MTimeMixin, luigi.Task):
+
+    def output(self):
+        return (luigi.LocalTarget(config.FILE_NAME_EDGES))
+
+    def requires(self):
+        return CreateCoordinates(), CreateLinks()
+
+    def run(self):
+        coords = Util.read_features(config.FILE_NAME_ARTICLE_COORDINATES)
+        with open(config.FILE_NAME_EDGES, 'w') as f:
+            edges = []
+            for (src, info) in Util.read_features(config.FILE_NAME_LINKS).iteritems():
+                if not src in coords: continue
+                x0, y0 = coords[src]['x'], coords[src]['y']
+                for dest in info['links'].split():
+                    if not dest in coords: continue
+                    x1, y1 = coords[dest]['x'], coords[dest]['y']
+                    edges.append((x0, y0, x1, y1))
+            f.write(str(len(edges)) + '\n')
+            for edge in edges:
+                f.write(' '.join(edge) + '\n')
+
+class BundleEdges(MTimeMixin, luigi.Task):
+    def requires(self):
+        CreateCoordinates(), CreateEdges()
+
+    def output(self):
+        return luigi.LocalTarget(config.FILE_NAME_EDGE_BUNDLES)
+
+    def run(self):
+        bundle = local[config.FILE_NAME_BUNDLE_BINARY]
+        cat = local["cat"]
+        tmp = tempfile.mktemp()
+        cmd = (cat < config.FILE_NAME_EDGES) | (bundle > tmp)
+        cmd()
+
+
+
+
+
+
+
 
 
 

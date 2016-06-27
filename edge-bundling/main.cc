@@ -14,7 +14,6 @@ Graph* CreateGraph() {
 
   int N;
   std::cin >> N;
-  std::cout << "Reading " << N << " edges\n";
   for (int i = 0; i < N; ++i) {
     double a0, z0, a1, z1;
     std::cin >> a0 >> z0 >> a1 >> z1;
@@ -39,7 +38,6 @@ int main(int argc, const char* argv[]) {
     done = graph->Step(DT);
   }
 
-  std::cout << "Done\n";
   graph->Print();
 
   return 0;
