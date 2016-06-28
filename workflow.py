@@ -482,46 +482,27 @@ class CreateLinks(MTimeMixin, luigi.Task):
                     links.append(' '.join(sorted(toIds)))
         Util.write_tsv(config.FILE_NAME_LINKS, ("id", "links"), ids, links)
 
-class CreateEdges(MTimeMixin, luigi.Task):
+class CreateRoadData(MTimeMixin, luigi.Task):
 
     def output(self):
-        return (luigi.LocalTarget(config.FILE_NAME_EDGES))
+        return (luigi.LocalTarget(config.FILE_NAME_EDGE_BUNDLES),
+                luigi.LocalTarget(config.FILE_NAME_NODE_BUNDLES))
 
     def requires(self):
         return CreateCoordinates(), CreateLinks()
 
     def run(self):
-        coords = Util.read_features(config.FILE_NAME_ARTICLE_COORDINATES)
-        with open(config.FILE_NAME_EDGES, 'w') as f:
-            edges = []
-            for (src, info) in Util.read_features(config.FILE_NAME_LINKS).iteritems():
-                if not src in coords: continue
-                x0, y0 = coords[src]['x'], coords[src]['y']
-                for dest in info['links'].split():
-                    if not dest in coords: continue
-                    x1, y1 = coords[dest]['x'], coords[dest]['y']
-                    edges.append((x0, y0, x1, y1))
-            f.write(str(len(edges)) + '\n')
-            for edge in edges:
-                f.write(' '.join(edge) + '\n')
+        feats = Util.read_features(config.FILE_NAME_LINKS, config.FILE_NAME_ARTICLE_COORDINATES)
+        indexes = sorted(int(id) for id in feats.keys())
 
-class BundleEdges(MTimeMixin, luigi.Task):
-    def requires(self):
-        CreateCoordinates(), CreateEdges()
-
-    def output(self):
-        return luigi.LocalTarget(config.FILE_NAME_EDGE_BUNDLES)
-
-    def run(self):
-        bundle = local[config.FILE_NAME_BUNDLE_BINARY]
-        cat = local["cat"]
-        tmp = tempfile.mktemp()
-        cmd = (cat < config.FILE_NAME_EDGES) | (bundle > tmp)
-        cmd()
-
-
-
-
-
-
-
+        with open(config.FILE_NAME_EDGE_BUNDLES, 'w') as ef, open(config.FILE_NAME_NODE_BUNDLES, 'w') as nf:
+            nf.write('# node x y\n')
+            ef.write('# source target\n')
+            for id1 in indexes:
+                sid1 = str(id1)
+                idEdges = feats[sid1].get('links', '').split()
+                idEdges = (int(id2) for id2 in idEdges)
+                if not idEdges: continue
+                nf.write('%d %s %s\n' %  (id1, feats[sid1]['x'], feats[sid1]['y']))
+                for id2 in sorted(idEdges):
+                    ef.write('%d %d\n' % (id1, id2))

@@ -42,8 +42,8 @@ class Config:
         # ========== road information ==========
         self.FILE_NAME_LINKS = "./data/tsv/links.txt"
         self.FILE_NAME_EDGES = "./data/tsv/edges.txt"
-        self.FILE_NAME_EDGE_BUNDLES = "./data/tsv/edge_bundles.txt"
-        self.FILE_NAME_BUNDLE_BINARY = "./edge-bundling/bundle"
+        self.FILE_NAME_EDGE_BUNDLES = "./data/tsv/bundle_edges.txt"
+        self.FILE_NAME_NODE_BUNDLES = "./data/tsv/bundle_nodes.txt"
 
 
 __config = Config()
