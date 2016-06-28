@@ -36,6 +36,16 @@ def read_wikibrain_vecs(path):
 #             s = ("\t".join(map(unicode, row)) + "\n").encode("utf-8")
 #             f.write("%s\t%s" % (row_num, s))
 
+def read_zoom(filename):
+    values = defaultdict(dict)
+    with open(filename) as f:
+        for line in f:
+            tokens = line.split('\t')
+            zoom = tokens[0]
+            denom = tokens[1][:-1]
+            values[zoom] = denom
+    return values
+
 
 def read_features(*files):
     values = defaultdict(dict)
@@ -75,6 +85,17 @@ def write_tsv(filename, header, indexList, *data):
             if data[i][-1] != "\n":
                 data[i] += "\n"
             writeFile.write("%s\t%s" % (indexList[i], data[i]))
+
+
+def sort_by_feature(articleDict, featureName, reverse=True):
+    allArticles = []
+    if featureName not in articleDict[articleDict.keys()[0]]:
+        raise InputError(featureName, "Feature does not exist")
+    for key in articleDict:
+        allArticles.append((key, articleDict[key]))
+    allArticles.sort(key=lambda x: x[1][featureName], reverse=reverse)
+    return allArticles
+
 
 class InputError(Exception):
     """Exception raised for errors in the input.

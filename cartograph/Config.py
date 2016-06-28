@@ -13,6 +13,7 @@ class Config:
         self.FILE_NAME_KEEP = "./data/tsv/keep.tsv"
         self.FILE_NAME_POPULARITY = "./data/labdata/article_popularity.tsv"
         self.FILE_NAME_NUMBERED_POPULARITY = "./data/tsv/popularity_with_id.tsv"
+        self.FILE_NAME_SCALE_DENOMINATORS = "./data/labdata/scale_denominators.tsv"
 
         self.NUM_CLUSTERS = 10  # number of clusters to generate from K-means
         self.TSNE_THETA = 0.5  # lower values = more accurate maps, but take (much) longer
@@ -29,6 +30,7 @@ class Config:
         self.DIRECTORY_NAME_TILES = self._localTiles
         self.FILE_NAME_REGION_NAMES = "./data/labdata/top_categories.tsv"
         self.FILE_NAME_IMGNAME = "./data/images/world"
+        self.FILE_NAME_IMGDOT = "./data/labdata/blackDot.png"
         self.FILE_NAME_COUNTRIES = "./data/geojson/countries.geojson"
         self.FILE_NAME_CONTOUR_DATA = "./data/geojson/contourData.geojson"
         self.FILE_NAME_MAP = "map.xml"
