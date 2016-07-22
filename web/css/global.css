@@ -1,5 +1,13 @@
 .btn.sharp {
   border-radius:0;
+  box-shadow: 0 3px 0 0 #222222;
+}
+
+.btn.sharp:active, btn.sharp.active {
+	background: #ffffff;
+	box-shadow: none;
+	margin-bottom: -3px;
+	margin-top: 3px;
 }
 
 @font-face{
