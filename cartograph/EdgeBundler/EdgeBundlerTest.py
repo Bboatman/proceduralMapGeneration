@@ -1,0 +1,66 @@
+import unittest
+from matplotlib import pyplot as plt
+import json
+import time
+from collections import defaultdict
+from EdgeBundler import EdgeBundler
+
+
+class EdgeBundlerTest(unittest.TestCase):
+
+    @staticmethod
+    def drawLine(point1, point2):
+        plt.plot([point1[0], point2[0]], [point1[1], point2[1]])
+
+    def test_simpleBundling(self):
+        points = [(0, 1), (0, 2), (0, 3), (0, 4), (10, 1), (10, 2), (10, 3), (10, 4)]
+        adjList = [[4], [5], [6], [7], [0], [1], [2], [3]]
+        numNeighbors = 2
+        bundler = EdgeBundler(points, adjList, numNeighbors)
+        bundler.doMingle()
+        plt.clf()
+        bundler.drawTree(drawLineFunc=self.drawLine)
+        # plt.show()
+
+    @staticmethod
+    def parseJSON(obj):
+        pointDict = {}
+        pointList = []
+        adjDict = defaultdict(list)
+        idx = 0
+        for edge in obj:
+            coords = edge["data"]["coords"]
+            point1 = tuple(coords[0:2])
+            point2 = tuple(coords[2:4])
+            if point1 not in pointDict:
+                pointDict[point1] = idx
+                pointList.append(point1)
+                idx += 1
+            if point2 not in pointDict:
+                pointDict[point2] = idx
+                pointList.append(point2)
+                idx += 1
+            index1 = pointDict[point1]
+            index2 = pointDict[point2]
+            adjDict[index1].append(index2)
+            adjDict[index2].append(index1)
+        adjList = [adjDict[i] for i in range(len(pointList))]
+        return pointList, adjList
+
+    @staticmethod
+    def showJsonData(filename):
+        with open(filename) as f:
+            jsonObj = json.load(f)
+            points, adjList = EdgeBundlerTest.parseJSON(jsonObj)
+            numNeighbors = 10
+            bundler = EdgeBundler(points, adjList, numNeighbors)
+            start = time.time()
+            bundler.doMingle()
+            print(time.time() - start)
+            plt.clf()
+            bundler.drawTree(drawLineFunc=EdgeBundlerTest.drawLine)
+            plt.show()
+
+    def test_jsonData(self):
+        self.showJsonData("world.json")
+        self.showJsonData("philippines.json")

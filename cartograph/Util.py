@@ -170,3 +170,7 @@ def calc_area(points):
     # Shoelace Algorithm (a la Stackoverflow)
     return 0.5 * np.abs(np.dot(x, np.roll(y, 1)) - np.dot(y, np.roll(x, 1)))
 
+
+def interpolate(pt0, pt1, value=0.5):
+    return pt1 + (np.subtract(pt0, pt1) * value)
+

@@ -1,4 +1,5 @@
 import numpy as np
+from cartograph.Util import interpolate
 from Vertex import Vertex
 
 
@@ -33,10 +34,6 @@ class NoisyEdgesMaker:
         numerator = np.dot(perp, d3)
         return (numerator / denominator) * d2 + b0
 
-    @staticmethod
-    def interpolate(pt0, pt1, value=0.5):
-        return pt1 + (np.subtract(pt0, pt1) * value)
-
     def _subdivide(self, a, b, c, d):
         """
         Subdivide the quadrilateral into smaller segments, adding the center to the edge
@@ -47,18 +44,18 @@ class NoisyEdgesMaker:
 
         # get random center point
         rand0, rand1 = np.random.uniform(0.2, 0.8, 2)
-        e = self.interpolate(a, d, rand0)
-        f = self.interpolate(b, c, rand0)
-        g = self.interpolate(a, b, rand1)
-        i = self.interpolate(d, c, rand1)
+        e = interpolate(a, d, rand0)
+        f = interpolate(b, c, rand0)
+        g = interpolate(a, b, rand1)
+        i = interpolate(d, c, rand1)
 
-        h = self.interpolate(e, f, rand1)  # center
+        h = interpolate(e, f, rand1)  # center
 
         # make new quadrilaterals and recurse
         rand2, rand3 = np.random.uniform(0.6, 1.4, 2)
-        self._subdivide(a, self.interpolate(g, b, rand2), h, self.interpolate(e, d, rand3))
+        self._subdivide(a, interpolate(g, b, rand2), h, interpolate(e, d, rand3))
         self.edge.append(h)
-        self._subdivide(h, self.interpolate(f, c, rand2), c, self.interpolate(i, d, rand3))
+        self._subdivide(h, interpolate(f, c, rand2), c, interpolate(i, d, rand3))
 
     def _makeNoisyEdge(self, pt0, pt1, pt2, pt3, processed=False):
         """
@@ -74,7 +71,7 @@ class NoisyEdgesMaker:
             bool1 = np.dot(u, w) > 0
             convex = bool0 ^ bool1
             if not convex:
-                midpoint = self.interpolate(pt0, pt2)
+                midpoint = interpolate(pt0, pt2)
                 perp = self.perpendicular(u)
                 pointToUse = pt0 if bool0 and bool1 else pt2  # are the region points behind the second vertex?
                 perpendicularPoint = np.add(midpoint, perp)
@@ -91,15 +88,15 @@ class NoisyEdgesMaker:
                              min(self.minBorderNoiseLength / 10, dist * 1.61803398875),  # golden ratio, cause why not?
                              self.minBorderNoiseLength * 10)
 
-        midpoint = self.interpolate(pt0, pt2)
+        midpoint = interpolate(pt0, pt2)
         perp = self.perpendicular(u) * multiplier
         pt1 = midpoint + perp
         pt3 = midpoint - perp
 
-        mid0 = self.interpolate(pt0, pt1)
-        mid1 = self.interpolate(pt1, pt2)
-        mid2 = self.interpolate(pt2, pt3)
-        mid3 = self.interpolate(pt3, pt0)
+        mid0 = interpolate(pt0, pt1)
+        mid1 = interpolate(pt1, pt2)
+        mid2 = interpolate(pt2, pt3)
+        mid3 = interpolate(pt3, pt0)
         self._subdivide(pt0, mid0, midpoint, mid3)
         self.edge.append(midpoint)
         self._subdivide(midpoint, mid1, pt2, mid2)
