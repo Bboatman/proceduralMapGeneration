@@ -6,7 +6,6 @@ matplotlib.use('Agg')
 import cartograph
 import os
 import shutil
-
 from cartograph import Config
 from cartograph import Colors
 from cartograph import Util
@@ -754,16 +753,13 @@ class LabelMapUsingZoom(MTimeMixin, luigi.Task):
         maxScaleClust = labelClust.getMaxDenominator(0)
         minScaleClust = labelClust.getMinDenominator(5)
 
+        #For testing remove later. 
+        labelClust.addWaterXml()
 
         labelClust.writeLabelsXml('[labels]', 'interior',
                                   breakZoom=config.getint('MapConstants', 'first_zoom_label'),
                                   minScale=10,
                                   maxScale=0)
-        # zoomValues = set()
-        # zoomValueData = Util.read_features(config.get("PreprocessingFiles",
-        #                                               "zoom_with_id"))
-        # for zoomInfo in list(zoomValueData.values()):
-        #     zoomValues.add(zoomInfo['maxZoom'])
 
         labelCities = Labels(config, mapFile,
                              'coordinates', config.get("MapData", "scale_dimensions"))
@@ -773,6 +769,7 @@ class LabelMapUsingZoom(MTimeMixin, luigi.Task):
                                                               "img_dot"),
                                            numBins=config.getint("MapConstants",
                                                                 "num_pop_bins"))
+
 
     def run(self):
         self.generateLabels(config.get("MapData", "density_contours_geojson"),
