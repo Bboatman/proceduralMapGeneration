@@ -19,7 +19,18 @@ class EdgeBundlerTest(unittest.TestCase):
         bundler = EdgeBundler(points, adjList, numNeighbors)
         bundler.doMingle()
         plt.clf()
-        bundler.drawTree(drawLineFunc=self.drawLine)
+        # bundler.drawTree(drawLineFunc=self.drawLine)
+        # plt.show()
+
+    def test_nestedBundling(self):
+        x = 13.5
+        points = [(0, 1), (0, 2), (0, 5), (0, 6), (x, 1), (x, 2), (x, 5), (x, 6)]
+        adjList = [[4], [5], [6], [7], [0], [1], [2], [3]]
+        numNeighbors = 4
+        bundler = EdgeBundler(points, adjList, numNeighbors)
+        bundler.doMingle()
+        plt.clf()
+        # bundler.drawTree(drawLineFunc=self.drawLine)
         # plt.show()
 
     @staticmethod
@@ -62,5 +73,6 @@ class EdgeBundlerTest(unittest.TestCase):
             plt.show()
 
     def test_jsonData(self):
-        self.showJsonData("world.json")
-        self.showJsonData("philippines.json")
+        # self.showJsonData("testuneven.json")
+        self.showJsonData("testcrossed.json")
+        # self.showJsonData("philippines.json")

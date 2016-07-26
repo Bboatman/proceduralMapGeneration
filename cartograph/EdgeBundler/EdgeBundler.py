@@ -40,6 +40,7 @@ class EdgeBundler:
         for i, edgeCoordinates in enumerate(edgeCoordinateList):
             _, indices = tree.query(np.array(edgeCoordinates).reshape(1, -1), self.numNeighbors)
             self.edgeList[i].neighbors = [self.edgeList[j] for j in indices[0] if j != i]
+        return self.edgeList
 
     def doMingle(self):
         candidateBundleList = [None for _ in range(self.numNeighbors)]
@@ -50,7 +51,9 @@ class EdgeBundler:
                     maxInkSaved = -float("inf")
                     maxSavingNeighborIndex = 0
                     for j, neighbor in enumerate(edge.neighbors):
-                        candidateBundle = self.tree.makeBundleCandidate(edge.bundle, neighbor.bundle)
+                        if edge.bundle == neighbor.bundle:
+                            continue
+                        candidateBundle = self.tree.makeBundleCandidate2(edge.bundle, neighbor.bundle)
                         candidateBundleList[j] = candidateBundle
                         inkSaved = edge.bundle.mutableInkValue + neighbor.bundle.mutableInkValue - candidateBundle[4]
                         if inkSaved > maxInkSaved:
@@ -68,13 +71,15 @@ class EdgeBundler:
 
     def drawTree(self, drawLineFunc):
         def drawEdge(e):
-            for point in e.S:
-                drawLineFunc(e.sPoint, point)
-            for point in e.T:
-                drawLineFunc(e.tPoint, point)
             for child in e.children:
+                drawLineFunc(e.sPoint, child.sPoint)
+                drawLineFunc(e.tPoint, child.tPoint)
                 drawEdge(child)
 
-        for edge in self.tree.topBundles:
+        topEdgesDict = {}
+        for edge in self.tree.edges:
+            topEdgesDict[edge.bundle.id] = edge.bundle
+        for edgeId in topEdgesDict:
+            edge = topEdgesDict[edgeId]
             drawLineFunc(edge.sPoint, edge.tPoint)
             drawEdge(edge)
