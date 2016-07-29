@@ -1,14 +1,17 @@
 #!/bin/bash
 
-export PYTHONPATH=$PYTHONPATH:.
+export PYTHONPATH=$PYTHONPATH:.:./cartograph
 
 me=$0
 
+CONF=conf.txt
+
 function usage() {
-    echo "usage: $me {-h|--help} {--task TaskName}" >&2
+    echo "usage: $me {-h|--help} {--module ModuleName} {--task TaskName} {--conf ConfFile.txt}" >&2
     exit 1
 }
 
+MODULE=RenderMap
 TASK=RenderMap
 
 while [ "$1" != "" ]; do
@@ -21,6 +24,14 @@ while [ "$1" != "" ]; do
             TASK=$2
             shift
             ;;
+        --module)
+            MODULE=$2
+            shift
+            ;;
+        --conf)
+            CONF=$2
+            shift
+            ;;
         *)
             echo "ERROR: unknown parameter \"$1\""
             usage
@@ -30,8 +41,12 @@ while [ "$1" != "" ]; do
     shift
 done
 
+export CARTOGRAPH_CONF=$CONF
 
-if luigi --module workflow $TASK --local-scheduler --retcode-task-failed 1; then
+if luigi --module $MODULE $TASK \
+         --local-scheduler \
+         --retcode-task-failed 1 \
+         --logging-conf-file ./data/conf/logging.conf; then
 	echo "LUIGI BUILD SUCCEEDED" >&2
 	exit 0
 else

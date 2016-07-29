@@ -1,5 +1,5 @@
 import numpy as np
-from cartograph.Util import interpolate
+from cartograph.Utils import interpolate
 from Vertex import Vertex
 
 

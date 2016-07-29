@@ -1,31 +1,34 @@
 [DEFAULT]
-externalDir: ./data/labdata
-generatedDir: ./data/tsv
-geojsonDir: ./data/geojson
-postprocessingDir: ./data/tsv
-interpolateDir: none
+dataset: dev_en
+baseDir: ./data/%(dataset)s
+generatedDir: %(baseDir)s/tsv
+mapDir: %(baseDir)s/maps
+geojsonDir: %(baseDir)s/geojson
+externalDir: ./data/labdata/%(dataset)s
 
 [ExternalFiles]
-vecs_with_id: %(externalDir)s/numberedVecsFull.tsv
-names_with_id: %(externalDir)s/numberedNamesFull.tsv
-popularity: %(externalDir)s/new_pop_full.tsv
-region_names: %(externalDir)s/top_categories_full.tsv
-article_embedding = %(externalDir)s/tsne_cache_full.tsv
+vecs_with_id: %(externalDir)s/vecs.tsv
+names_with_id: %(externalDir)s/names.tsv
+popularity: %(externalDir)s/popularity.tsv
+region_names: %(externalDir)s/region_names.tsv
+article_embedding: %(externalDir)s/tsne_cache.tsv
+sample_ids:
+; [ sample_ids is optional and it should be a tsv file contained sampled ids
 
-[PreprocessingFiles]
-article_coordinates: %(externalDir)s/tsne_cache_full.tsv
-vecs_with_id: %(externalDir)s/numberedVecsFull.tsv
-names_with_id: %(externalDir)s/numberedNamesFull.tsv
+[GeneratedFiles]
+article_coordinates: %(generatedDir)s/coordinates.tsv
+vecs_with_id: %(generatedDir)s/numberedVecs.tsv
 clusters_with_id: %(generatedDir)s/numberedClusters.tsv
+denoised_with_id: %(generatedDir)s/keep.tsv
 coordinates_with_water: %(generatedDir)s/water_and_article_coordinates.tsv
 clusters_with_water: %(generatedDir)s/clusters_with_water_pts.tsv
-denoised_with_id: %(generatedDir)s/keep.tsv
 popularity_with_id: %(generatedDir)s/popularity_with_id.tsv
 percentile_popularity_with_id: %(generatedDir)s/percentile_popularity_with_id.tsv
 zoom_with_id: %(generatedDir)s/numberedZoom.tsv
 country_borders: %(generatedDir)s/country_borders.tsv
 
 [PreprocessingConstants]
+sample_size: 50000
 num_clusters: 13
 tsne_theta: 0.5
 min_num_in_cluster: 100
@@ -49,23 +52,21 @@ density_contours_geojson: %(geojsonDir)s/densityContourData.geojson
 centroid_contours_geojson: %(geojsonDir)s/centroidContourData.geojson
 clusters_with_region_id: %(generatedDir)s/region_clusters.tsv
 borders_with_region_id: %(generatedDir)s/region_borders.tsv
-title_by_zoom: %(geojsonDir)s/maxZoom_of_articles.geojson
-top_titles: %(geojsonDir)s/top_100_articles.geojson
-scale_dimensions: %(externalDir)s/scale_denominators.tsv
+title_by_zoom: %(geojsonDir)s/coordinates.geojson
+scale_dimensions: ./data/labdata/scale_denominators.tsv
 
 [MapResources]
-img_dot: %(externalDir)s/blackDot.png
+img_dot: ./data/labdata/blackDot.png
 fontDir: ./data/fonts
 
 [MapOutput]
-map_file: map.xml
-map_file_density: map_density.xml
-map_file_centroid: map_centroid.xml
-img_src_name: ./data/images/world
+map_file_density: ./map_density.xml
+map_file_centroid: ./map_centroid.xml
+img_src_name: %(mapDir)s/world
 
 [PG]
 host = localhost
-database = mapnik
+database = mapnik_%(dataset)s
 user =
 password =
 
