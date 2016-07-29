@@ -1,24 +1,29 @@
 import numpy as np
 from cartograph.Util import interpolate
-from math import sqrt
-from scipy.optimize import minimize_scalar
+from math import sqrt, tan, pi, acos
 
 
 class EdgeBundleTree:
+
+    gr = (1 + sqrt(5)) / 2
+    maxTurningAngle = 180 - 45
+    maxTurningAngleCot = 1 / tan(maxTurningAngle * pi / 180)
 
     def __init__(self, edges):
         self.edges = edges
 
     @staticmethod
-    def costFunction(x, sCentroid, tCentroid, S, T):
-        retVal = 0
-        m1 = interpolate(sCentroid, tCentroid, 1-x)
-        m2 = interpolate(sCentroid, tCentroid, x)
-        for point in S:
-            retVal += np.linalg.norm(point - m1)
-        for point in T:
-            retVal += np.linalg.norm(point - m2)
-        return retVal + np.linalg.norm(m1 - m2)
+    def goldenSectionSearch(f, a, b, tol=1e-3):
+        c = b - (b - a) / EdgeBundleTree.gr
+        d = a + (b - a) / EdgeBundleTree.gr
+        while abs(c - d) > tol:
+            if f(c) < f(d):
+                b = d
+            else:
+                a = c
+            c = b - (b - a) / EdgeBundleTree.gr
+            d = a + (b - a) / EdgeBundleTree.gr
+        return (b + a) / 2
 
     @staticmethod
     def makeBundleCandidate1(bundle1, bundle2):
@@ -27,26 +32,41 @@ class EdgeBundleTree:
         tCentroid = (bundle1.weight * bundle1.tCentroid + bundle2.weight * bundle2.tCentroid) \
                     / (bundle1.weight + bundle2.weight)
         u = tCentroid - sCentroid
+        u = u / np.linalg.norm(u)
         distSum = 0
         k = 0
         combinedS = bundle1.S | bundle2.S
         combinedT = bundle1.T | bundle2.T
+        maxDist = 0
         for point in combinedS:
             v = point - sCentroid
-            distSum += np.dot(u, v)
+            dist = np.dot(u, v)
+            maxDist = max(maxDist, dist)
+            distSum += dist
             k += 1
         for point in combinedT:
             v = point - tCentroid
-            distSum -= np.dot(u, v)
+            dist = -np.dot(u, v)
+            maxDist = max(maxDist, dist)
+            distSum += dist
             k += 1
-        d = np.linalg.norm(tCentroid - sCentroid)
-        x = ((distSum + 2 * d) / (k + 4) / d)
+        totalWeight = 1
+        dx = tCentroid[0] - sCentroid[0]
+        dy = tCentroid[1] - sCentroid[1]
+        d = sqrt(dx * dx + dy * dy)
+        x = ((distSum + 2 * totalWeight * d) / (k + 4 * totalWeight) / d)
         sPoint, tPoint = interpolate(sCentroid, tCentroid, 1 - x), interpolate(sCentroid, tCentroid, x)
-        inkValueCombined = np.linalg.norm(tPoint - sPoint)
+        dx = tPoint[0] - sPoint[0]
+        dy = tPoint[1] - sPoint[1]
+        inkValueCombined = sqrt(dx * dx + dy * dy)
         for point in combinedS:
-            inkValueCombined += np.linalg.norm(point - sPoint)
+            dx = point[0] - sPoint[0]
+            dy = point[1] - sPoint[1]
+            inkValueCombined += sqrt(dx * dx + dy * dy)
         for point in combinedT:
-            inkValueCombined += np.linalg.norm(point - tPoint)
+            dx = point[0] - tPoint[0]
+            dy = point[1] - tPoint[1]
+            inkValueCombined += sqrt(dx * dx + dy * dy)
         return sPoint, tPoint, sCentroid, tCentroid, inkValueCombined
 
     @staticmethod
@@ -55,29 +75,73 @@ class EdgeBundleTree:
                     / (bundle1.weight + bundle2.weight)
         tCentroid = (bundle1.weight * bundle1.tCentroid + bundle2.weight * bundle2.tCentroid) \
                     / (bundle1.weight + bundle2.weight)
-        u = tCentroid - sCentroid
-        d = np.linalg.norm(tCentroid - sCentroid)
-        u = u / np.linalg.norm(u)
-        xx = []
-        yy = []
+        totalWeight = 1  # (bundle1.weight + bundle2.weight) / 4.0
         combinedS = bundle1.S | bundle2.S
         combinedT = bundle1.T | bundle2.T
-        for point in combinedS:
-            v = point - sCentroid
-            dot = np.dot(u, v)
-            xx.append(dot)
-            yy.append(np.linalg.norm(v - u * dot))
-        for point in combinedT:
-            v = point - tCentroid
-            dot = -np.dot(u, v)
-            xx.append(dot)
-            yy.append(np.linalg.norm(v - u * dot))
-        res = minimize_scalar(EdgeBundleTree.costFunction, bracket=(0, 1),
-                              args=(sCentroid, tCentroid, combinedS, combinedT),
-                              bounds=(0, 1), method="Golden")
-        x = res.x
+
+        u = tCentroid - sCentroid
+        length = np.linalg.norm(u)
+        u = u / length
+
+        def getMaxCotVal(val):
+            # This method doesn't always produce the results that one would expect. It does force angles to be at least
+            # a certain value, but it doesn't take the children of edges about to be bundled into account. Individual
+            # bundles are formed from points with the correct angles, but when a higher-order bundle is formed from
+            # those last two, the bundling does not take the angle of child edge to edge to new bundled edge into
+            # account. With proper rending, this shouldn't be much of a problem though.
+            m1 = interpolate(sCentroid, tCentroid, 1 - val)
+            m2 = interpolate(sCentroid, tCentroid, val)
+            maxCot = -float("inf")
+            maxCotHeight = -float("inf")
+            for point in combinedS:
+                v = point - m1
+                dist = np.dot(u, v)
+                heightVec = v - u * dist
+                height = sqrt(heightVec[0] * heightVec[0] + heightVec[1] * heightVec[1])
+                cotVal = dist / height
+                if cotVal > maxCot:
+                    maxCot = cotVal
+                    maxCotHeight = height
+            for point in combinedT:
+                v = point - m2
+                dist = np.dot(u, v)
+                heightVec = v - u * dist
+                height = sqrt(heightVec[0] * heightVec[0] + heightVec[1] * heightVec[1])
+                cotVal = -dist / height
+                if cotVal > maxCot:
+                    maxCot = cotVal
+                    maxCotHeight = height
+            return maxCot, maxCotHeight
+
+        def costFunction(val):
+            assert val <= 1 or val >= 0
+            retVal = 0
+            m1 = interpolate(sCentroid, tCentroid, 1 - val)
+            m2 = interpolate(sCentroid, tCentroid, val)
+            for p in combinedS:
+                dx = p[0] - m1[0]
+                dy = p[1] - m1[1]
+                retVal += sqrt(dx * dx + dy * dy)
+            for p in combinedT:
+                dx = p[0] - m2[0]
+                dy = p[1] - m2[1]
+                retVal += sqrt(dx * dx + dy * dy)
+            dx = m2[0] - m1[0]
+            dy = m2[1] - m1[1]
+
+            totalInkVal = retVal + sqrt(dx * dx + dy * dy) * totalWeight
+            return totalInkVal  # * (1 + cos(atan(getMaxTanVal(val)[0])) / 1.2)
+
+        x = EdgeBundleTree.goldenSectionSearch(costFunction, 0, 0.5)
+        maxCotVal, maxCotValValHeight = getMaxCotVal(x)
+        if maxCotVal > EdgeBundleTree.maxTurningAngleCot:
+            x += (maxCotVal - EdgeBundleTree.maxTurningAngleCot) * maxCotValValHeight / length
+            if x > 0.5:
+                return None, None, None, None, float("inf")
         sPoint, tPoint = interpolate(sCentroid, tCentroid, 1 - x), interpolate(sCentroid, tCentroid, x)
-        inkValue = EdgeBundleTree.costFunction(x, sCentroid, tCentroid, combinedS, combinedT)
+        assert sPoint[0] < tPoint[0]
+        assert sPoint[0] < tPoint[0]
+        inkValue = costFunction(x)
         return sPoint, tPoint, sCentroid, tCentroid, inkValue
 
     def applyBundle(self, bundleData, edge1, edge2):
@@ -145,8 +209,12 @@ class Edge:
 
     @staticmethod
     def parentEdge(sPoint, tPoint, sCentroid, tCentroid, children, inkValue):
-        S = children[0].S | children[1].S
-        T = children[0].T | children[1].T
+        S = set()
+        T = set()
+        S.add(tuple(children[0].sPoint))
+        S.add(tuple(children[1].sPoint))
+        T.add(tuple(children[0].tPoint))
+        T.add(tuple(children[1].tPoint))
         edge = Edge(np.array(sPoint), np.array(tPoint), S, T, sCentroid, tCentroid,
                     neighbors=[], children=children, weight=children[0].weight + children[1].weight,
                     inkValue=inkValue, grouped=True)

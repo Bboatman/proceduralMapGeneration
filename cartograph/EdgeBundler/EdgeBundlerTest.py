@@ -19,19 +19,21 @@ class EdgeBundlerTest(unittest.TestCase):
         bundler = EdgeBundler(points, adjList, numNeighbors)
         bundler.doMingle()
         plt.clf()
+        plt.axis("equal")
         # bundler.drawTree(drawLineFunc=self.drawLine)
         # plt.show()
 
     def test_nestedBundling(self):
-        x = 13.5
+        x = 20
         points = [(0, 1), (0, 2), (0, 5), (0, 6), (x, 1), (x, 2), (x, 5), (x, 6)]
         adjList = [[4], [5], [6], [7], [0], [1], [2], [3]]
         numNeighbors = 4
         bundler = EdgeBundler(points, adjList, numNeighbors)
         bundler.doMingle()
         plt.clf()
-        # bundler.drawTree(drawLineFunc=self.drawLine)
-        # plt.show()
+        plt.axis("equal")
+        bundler.drawTree(drawLineFunc=self.drawLine)
+        plt.show()
 
     @staticmethod
     def parseJSON(obj):
@@ -41,8 +43,12 @@ class EdgeBundlerTest(unittest.TestCase):
         idx = 0
         for edge in obj:
             coords = edge["data"]["coords"]
-            point1 = tuple(coords[0:2])
-            point2 = tuple(coords[2:4])
+            temp1 = coords[0:2]
+            temp1[1] = -temp1[1]
+            temp2 = coords[2:4]
+            temp2[1] = -temp2[1]
+            point1 = tuple(temp1)
+            point2 = tuple(temp2)
             if point1 not in pointDict:
                 pointDict[point1] = idx
                 pointList.append(point1)
@@ -63,16 +69,21 @@ class EdgeBundlerTest(unittest.TestCase):
         with open(filename) as f:
             jsonObj = json.load(f)
             points, adjList = EdgeBundlerTest.parseJSON(jsonObj)
-            numNeighbors = 10
+            numNeighbors = 15
             bundler = EdgeBundler(points, adjList, numNeighbors)
             start = time.time()
             bundler.doMingle()
             print(time.time() - start)
             plt.clf()
+            plt.axis("equal")
             bundler.drawTree(drawLineFunc=EdgeBundlerTest.drawLine)
+            unzipped = zip(*points)
+            plt.scatter(unzipped[0], unzipped[1], c="black")
             plt.show()
 
     def test_jsonData(self):
-        # self.showJsonData("testuneven.json")
+        self.showJsonData("testuneven.json")
         self.showJsonData("testcrossed.json")
-        # self.showJsonData("philippines.json")
+        self.showJsonData("philippines.json")
+        # self.showJsonData("eastwestcommute.json")
+        # self.showJsonData("world.json")

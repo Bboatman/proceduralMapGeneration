@@ -49,11 +49,11 @@ class EdgeBundler:
             for edge in self.edgeList:
                 if not edge.bundle.grouped:
                     maxInkSaved = -float("inf")
-                    maxSavingNeighborIndex = 0
+                    maxSavingNeighborIndex = None
                     for j, neighbor in enumerate(edge.neighbors):
                         if edge.bundle == neighbor.bundle:
                             continue
-                        candidateBundle = self.tree.makeBundleCandidate2(edge.bundle, neighbor.bundle)
+                        candidateBundle = self.tree.makeBundleCandidate1(edge.bundle, neighbor.bundle)
                         candidateBundleList[j] = candidateBundle
                         inkSaved = edge.bundle.mutableInkValue + neighbor.bundle.mutableInkValue - candidateBundle[4]
                         if inkSaved > maxInkSaved:
@@ -61,8 +61,8 @@ class EdgeBundler:
                             maxSavingNeighborIndex = j
                     if maxInkSaved > 0:
                         self.tree.applyBundle(candidateBundleList[maxSavingNeighborIndex],
-                                         edge,
-                                         edge.neighbors[maxSavingNeighborIndex])
+                                              edge,
+                                              edge.neighbors[maxSavingNeighborIndex])
                         inkWasSaved = True
             if not inkWasSaved:
                 break
